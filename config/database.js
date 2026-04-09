@@ -1,12 +1,18 @@
-// dbConfig.js
 const mongoose = require('mongoose');
-require('dotenv').config(); // local .env support
+require('dotenv').config();
 
 const connectDB = async () => {
   try {
-    // Use production URI if available, else fallback to local
-    const mongoURI = process.env.MONGO_PROD_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/news-alerts';
-    
+    if (process.env.NODE_ENV === 'production' && !process.env.MONGO_PROD_URI) {
+      console.error('❌ MONGO_PROD_URI not set in production!');
+      process.exit(1);
+    }
+
+    const mongoURI =
+      process.env.NODE_ENV === 'production'
+        ? process.env.MONGO_PROD_URI
+        : process.env.MONGO_URI || 'mongodb://localhost:27017/news-alerts';
+
     await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -15,7 +21,7 @@ const connectDB = async () => {
     console.log('✓ MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection failed:', error.message);
-    process.exit(1); // exit process if DB fails
+    process.exit(1);
   }
 };
 
