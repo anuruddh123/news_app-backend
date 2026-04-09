@@ -41,6 +41,8 @@ const io = socketIO(server, {
   },
 });
 
+
+
 // Store connected users
 const connectedUsers = new Map();
 
@@ -193,4 +195,8 @@ server.listen(PORT, () => {
   console.log(`✓ Socket.io is ready for real-time updates`);
 });
 
+// Root route for browser test
+app.get('/', (req, res) => {
+  res.send('Server is running with MongoDB Atlas!');
+});
 module.exports = { app, server, io };
