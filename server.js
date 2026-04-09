@@ -77,7 +77,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Connect to database
+// Connect to MongoDB Atlas only
 connectDB();
 
 // Routes
@@ -85,6 +85,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// Root route for browser test
+app.get('/', (req, res) => {
+  res.send('Server is running with MongoDB Atlas!');
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -117,45 +122,31 @@ cron.schedule('*/15 * * * *', async () => {
   console.log('Processing alerts...');
   try {
     const alerts = await Alert.find({ isActive: true }).populate('userId');
-
     const now = new Date();
 
     for (const alert of alerts) {
-      // Check if alert should be triggered based on frequency
       const lastTriggered = alert.lastTriggeredAt || new Date(0);
-      const timeDiff = now - lastTriggered;
-      const minutesDiff = timeDiff / (1000 * 60);
-
+      const minutesDiff = (now - lastTriggered) / (1000 * 60);
       let shouldTrigger = false;
 
-      if (alert.frequency === 'immediate' && minutesDiff >= 1) {
-        shouldTrigger = true;
-      } else if (alert.frequency === 'hourly' && minutesDiff >= 60) {
-        shouldTrigger = true;
-      } else if (alert.frequency === 'daily' && minutesDiff >= 1440) {
-        shouldTrigger = true;
-      }
+      if (alert.frequency === 'immediate' && minutesDiff >= 1) shouldTrigger = true;
+      else if (alert.frequency === 'hourly' && minutesDiff >= 60) shouldTrigger = true;
+      else if (alert.frequency === 'daily' && minutesDiff >= 1440) shouldTrigger = true;
 
       if (shouldTrigger) {
-        // Get latest news for this category
         const latestNews = await News.findOne({ category: alert.category, isAlerted: false })
           .sort({ publishedAt: -1 })
           .lean();
 
         if (latestNews) {
-          // Send notification, using alert-specific delivery settings when configured
           await notificationService.sendNotifications(latestNews, [
             { user: alert.userId, notificationMethods: alert.notificationMethods },
           ]);
 
-          // Mark news as alerted
           await News.findByIdAndUpdate(latestNews._id, { isAlerted: true });
-
-          // Update alert's lastTriggeredAt
           alert.lastTriggeredAt = now;
           await alert.save();
 
-          // Emit to connected user via Socket.io
           const socketId = connectedUsers.get(alert.userId._id.toString());
           if (socketId) {
             io.to(socketId).emit('newAlert', {
