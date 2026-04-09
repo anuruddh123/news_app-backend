@@ -8,35 +8,42 @@ class EmailService {
 
   async sendNewsAlert(emailAddress, newsData, userName) {
     try {
+      console.log(`Attempting to send news alert email to: ${emailAddress}`);
+
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: `"News Alerts" <${process.env.EMAIL_USER}>`,
         to: emailAddress,
         subject: `🚨 Breaking News Alert: ${newsData.title}`,
         html: this.generateEmailTemplate(newsData, userName),
       };
 
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent:', info.messageId);
+      console.log('✅ Email sent successfully:', info.messageId);
       return { success: true, messageId: info.messageId };
     } catch (error) {
-      console.error('Email sending failed:', error.message);
+      console.error('❌ Email sending failed:', error.message);
+      console.error('Full error:', error);
       return { success: false, error: error.message };
     }
   }
 
   async sendPreferenceConfirmation(emailAddress, userName, preferences) {
     try {
+      console.log(`Attempting to send preference confirmation email to: ${emailAddress}`);
+
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: `"News Alerts" <${process.env.EMAIL_USER}>`,
         to: emailAddress,
         subject: '✓ Alert Preferences Updated',
         html: this.generatePreferenceTemplate(userName, preferences),
       };
 
       const info = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Preference confirmation email sent:', info.messageId);
       return { success: true, messageId: info.messageId };
     } catch (error) {
-      console.error('Email sending failed:', error.message);
+      console.error('❌ Preference confirmation email failed:', error.message);
+      console.error('Full error:', error);
       return { success: false, error: error.message };
     }
   }

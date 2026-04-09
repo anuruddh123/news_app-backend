@@ -8,6 +8,7 @@ const http = require('http');
 const socketIO = require('socket.io');
 const cron = require('node-cron');
 
+
 // Import database connection
 const connectDB = require('./config/database');
 
@@ -40,7 +41,6 @@ const io = socketIO(server, {
     methods: ['GET', 'POST'],
   },
 });
-
 
 
 // Store connected users
@@ -120,7 +120,7 @@ cron.schedule('*/30 * * * *', async () => {
 });
 
 // Process alerts every 15 minutes
-cron.schedule('*/15 * * * *', async () => {
+cron.schedule('*/* * * * *', async () => {
   console.log('Processing alerts...');
   try {
     const alerts = await Alert.find({ isActive: true }).populate('userId');
